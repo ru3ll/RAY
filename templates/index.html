@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../static/css/index.css">
+    <title>Document</title>
+</head>
+<body>
+    <div class="chatbot">
+        <div class="header">
+            <div class="mydict">
+                <div id="label" onchange="getValue()">
+                    <label>
+                        <input type="radio" value="Chat" name="radio" checked>
+                        <span>Chat</span>
+                    </label>
+                    <label>
+                        <input type="radio" value="PDF" name="radio">
+                        <span>PDF</span>
+                    </label>
+                    <label>
+                        <input type="radio" value="Tools" name="radio">
+                        <span>Tools</span>
+                    </label>
+                    
+                </div>
+            </div>
+            <div class="spinner">
+                <img src="../static/images/background.gif" alt="" />
+                <img src="../static/images/Vanilla@1x-1.3s-80px-80px.gif"/>
+            </div>
+            <div class="title">
+                <button class="btn">
+                    <span class="icon">
+                        <svg viewBox="0 0 175 80" width="40" height="40">
+                            <rect width="80" height="15" fill="#f0f0f0" rx="10"></rect>
+                            <rect y="30" width="80" height="15" fill="#f0f0f0" rx="10"></rect>
+                            <rect y="60" width="80" height="15" fill="#f0f0f0" rx="10"></rect>
+                        </svg>
+                    </span>
+                    <span class="text">History</span>
+                </button>
+            </div>
+        </div>
+        <ul id="chat_messages"></ul>
+        <div class="message_container">
+            <div class="messageBox" enctype="multipart/form-data">
+                <div class="fileUploadWrapper">
+                    <label for="file">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 337 337">
+                        <circle
+                            stroke-width="20"
+                            stroke="#6c6c6c"
+                            fill="none"
+                            r="158.5"
+                            cy="168.5"
+                            cx="168.5"
+                        ></circle>
+                        <path
+                            stroke-linecap="round"
+                            stroke-width="25"
+                            stroke="#6c6c6c"
+                            d="M167.759 79V259"
+                        ></path>
+                        <path
+                            stroke-linecap="round"
+                            stroke-width="25"
+                            stroke="#6c6c6c"
+                            d="M79 167.138H259"
+                        ></path>
+                        </svg>
+                        <span class="tooltip">Add an PDF</span>
+                    </label>
+                <input type="file" id="file" name="file" onchange="displayFile()" />
+                </div>
+        
+                <input required="" placeholder="Message..." type="text" id="messageInput" />
+                <!-- <textarea  required="" id="messageInput" placeholder="Message..."></textarea> -->
+                <button id="sendButton">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 664 663">
+                    <path
+                    fill="none"
+                    d="M646.293 331.888L17.7538 17.6187L155.245 331.888M646.293 331.888L17.753 646.157L155.245 331.888M646.293 331.888L318.735 330.228L155.245 331.888"
+                    ></path>
+                    <path
+                    stroke-linejoin="round"
+                    stroke-linecap="round"
+                    stroke-width="33.67"
+                    stroke="#6c6c6c"
+                    d="M646.293 331.888L17.7538 17.6187L155.245 331.888M646.293 331.888L17.753 646.157L155.245 331.888M646.293 331.888L318.735 330.228L155.245 331.888"
+                    ></path>
+                </svg>
+                </button>
+            </div>
+            
+        </div>
+    </div>
+    
+    
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <script>
+        
+        window.onload = () =>{
+            let chat_messages = document.getElementById("chat_messages");
+            let messages;
+
+            fetch("messages")
+                .then(response => response.json())
+                .then(data => {
+                    messages = data;
+                    messages.forEach(element => {
+                        if (element.role == "user"){
+                            chat_messages.insertAdjacentHTML("beforeend", `<li class="user_container"><div class = "user">${marked.parse(element.content)}</div></li>`)
+                        }else{
+                            chat_messages.insertAdjacentHTML("beforeend", `<li class = "ai">${marked.parse(element.content)}</li>`)
+                        }
+                    });
+
+                    chat_messages.scrollTo(0, chat_messages.scrollHeight)
+                })
+            
+        }
+
+        
+        let submitBtn = document.getElementById("sendButton");
+        let user_prompt = document.getElementById("messageInput");
+        const fileInput = document.getElementById("file");
+
+        let chat_element 
+        let includeE = false
+        let radio = "Chat"
+        const radios = document.getElementsByName('radio')
+        function getValue(){
+            for (const r of radios){
+                if(r.checked){
+                    radio = r.value;
+                    break
+                }
+            }
+        }
+        function displayFile(){
+            const file = fileInput.files[0]
+            
+            if(file){
+                if (file.type.startsWith("image/")){
+                    const reader = new FileReader()
+                    reader.readAsDataURL(file)
+                    reader.onload = (event) => {
+                        console.log("image loaded")
+                        chat_element = `
+                        <li class="user_container">
+                            <img src=${event.target.result}>
+                            <div></div>
+                        </li>`
+                        chat_messages.insertAdjacentHTML("beforeend", chat_element)
+                        chat_messages.scrollTo(0, chat_messages.scrollHeight)
+                        includeE = true
+                    }
+                    
+                }else if(file.type == "application/pdf"){
+                    chat_element = `
+                    <li class="user_container">
+                        <p class="pdf" style = "color : red;">${file.name}</p>
+                        <div ></div>
+                    </li>`
+                    chat_messages.insertAdjacentHTML("beforeend", chat_element)
+                    chat_messages.scrollTo(0, chat_messages.scrollHeight)
+                    includeE = true
+                }
+            }
+        }
+
+        submitLogic = async() =>{
+            let value = String(user_prompt.value)
+            user_prompt.value = ""
+            if (value == ""){
+                return
+            }
+            if (includeE){ // file included (PDF chat)
+                el = chat_messages.lastChild.querySelector("div")
+                el.classList.add("user")
+                el.textContent = value
+                chat_messages.scrollTo(0, chat_messages.scrollHeight)
+
+                const file = fileInput.files[0];
+                const formData = new FormData()
+                formData.append("file", file)
+                formData.append('message', value)
+                const response = await fetch("/upload", {
+                    method: 'POST',
+                    body : formData
+                })
+
+                let chatLi = document.createElement("li")
+                chatLi.classList.add("ai")
+                chat_messages.appendChild(chatLi)
+                const reader = response.body.getReader();
+                let output = "";
+
+                while (true) {
+                    const {done, value} = await reader.read();
+                    output += new TextDecoder().decode(value);
+                    chatLi.innerHTML = marked.parse(output);
+                    chat_messages.scrollTo(0, chat_messages.scrollHeight)
+                    if (done){
+                        return;
+                    }
+                }
+            }else{
+                chat_messages.insertAdjacentHTML("beforeend", `
+                <li class="user_container">
+                    <div class = "user">${value}</div>
+                </li>
+                `)
+            
+                includeE = false
+                
+                chat_messages.scrollTo(0, chat_messages.scrollHeight)
+                let body = JSON.stringify({
+                    message : value,
+                    conversationType : radio,
+                })
+                const response = await fetch("/answer", {
+                    method : "POST",
+                    headers : {
+                        "Content-Type" : "application/json",
+                    },
+                    body : body
+                })
+            
+
+                let chatLi = document.createElement("li")
+                chatLi.classList.add("ai")
+                chat_messages.appendChild(chatLi)
+                const reader = response.body.getReader();
+                let output = "";
+
+                while (true) {
+                    const {done, value} = await reader.read();
+                    output += new TextDecoder().decode(value);
+                    chatLi.innerHTML = marked.parse(output);
+                    chat_messages.scrollTo(0, chat_messages.scrollHeight)
+                    if (done){
+                        return;
+                    }
+                }
+            }
+        }
+
+        submitBtn.addEventListener("click", async (e) => {
+            e.preventDefault()
+            submitLogic()
+        })
+
+        document.addEventListener("keypress", async(e)=>{
+            if(e.key === "Enter"){
+                submitLogic()
+            }
+            
+        })
+
+        
+    </script>
+</body>
+</html>
